@@ -12,10 +12,10 @@
 
 # 用户列表(请配置要和bot说话的账号的微信昵称！)
 # 例如：LISTEN_LIST = [['微信名1', '角色1'],['微信名2', '角色2']]
-LISTEN_LIST = [['微信名1', '角色1']]
+LISTEN_LIST = [['陈甦', '角色1'], ['测试❗', '角色2']]
 
 # DeepSeek API 配置
-DEEPSEEK_API_KEY = ''
+DEEPSEEK_API_KEY = 'sk-3V4NNKm3ZdGGUAzjP4UOHE48hE3y4qAnsiUGHo20y6hyJw9P'
 # 硅基流动API注册地址，免费15元额度 https://cloud.siliconflow.cn/
 DEEPSEEK_BASE_URL = 'https://vg.v1api.cc/v1'
 # 硅基流动API的模型
@@ -33,9 +33,9 @@ TEMPERATURE = 1.1
 
 # Moonshot AI配置（用于图片和表情包识别）
 # API申请https://platform.moonshot.cn/
-MOONSHOT_API_KEY = ''
-MOONSHOT_BASE_URL = 'https://vg.v1api.cc/v1'
-MOONSHOT_MODEL = 'gpt-4o'
+MOONSHOT_API_KEY = 'sk-rNrRh5oxJmNMRnUn1XNsxgNOSc7VQC7unJmkysxN9ZxK3u8f'
+MOONSHOT_BASE_URL = 'https://api.moonshot.cn/v1'
+MOONSHOT_MODEL = 'moonshot-v1-8k-vision-preview'
 MOONSHOT_TEMPERATURE = 0.8
 ENABLE_IMAGE_RECOGNITION = True
 ENABLE_EMOJI_RECOGNITION = True

@@ -21,6 +21,9 @@
 - 对 config.py 进行更新时合并用户原有的配置选项（保留原有注释和格式，仅追加新增项）
 """
 
+# 是否启用自动更新功能，设置为True开启，False关闭
+ENABLE_AUTO_UPDATE = False
+
 import os
 import re
 import ast
@@ -38,8 +41,8 @@ logger = logging.getLogger(__name__)
 
 class Updater:
     # GitHub仓库信息
-    REPO_OWNER = "iwyxdxl"
-    REPO_NAME = "WeChatBot_WXAUTO_SE"
+    REPO_OWNER = "klhalu1"
+    REPO_NAME = "wechatbot"
     REPO_BRANCH = "main"
     GITHUB_API = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}"
     
@@ -577,6 +580,10 @@ class Updater:
 
 def check_and_update():
     """检查并执行更新"""
+    if not ENABLE_AUTO_UPDATE:
+        logger.info("自动更新功能已禁用")
+        return {'success': True, 'output': "自动更新功能已禁用", 'has_update': False}
+    
     logger.info("开始检查GitHub更新...")
     updater = Updater()
     return updater.update()
