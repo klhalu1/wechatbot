@@ -139,11 +139,18 @@ def submit_config():
         # 处理二维数组：微信昵称与对应Prompt配置
         nicknames = request.form.getlist('nickname')
         prompt_files = request.form.getlist('prompt_file')
-        new_values['LISTEN_LIST'] = [
-            [nick.strip(), pf.strip()] 
-            for nick, pf in zip(nicknames, prompt_files) 
-            if nick.strip() and pf.strip()
-        ]
+        
+        # 使用新的命名模式检测群聊标记
+        is_group_map = {}
+        for i in range(len(nicknames)):
+            key = f'is_group_{i}'
+            is_group_map[i] = key in request.form
+        
+        # 构建LISTEN_LIST, 设置群聊标记
+        new_values['LISTEN_LIST'] = []
+        for i, (nick, pf) in enumerate(zip(nicknames, prompt_files)):
+            if nick.strip() and pf.strip():
+                new_values['LISTEN_LIST'].append([nick.strip(), pf.strip(), is_group_map.get(i, False)])
 
         # 处理布尔字段
         boolean_fields = [

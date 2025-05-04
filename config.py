@@ -12,7 +12,7 @@
 
 # 用户列表(请配置要和bot说话的账号的微信昵称！)
 # 例如：LISTEN_LIST = [['微信名1', '角色1'],['微信名2', '角色2']]
-LISTEN_LIST = [['陈甦', '角色1'], ['测试❗', '角色2']]
+LISTEN_LIST = [['陈甦', '角色1', False], ['测试❗', '角色2', True]]
 
 # DeepSeek API 配置
 DEEPSEEK_API_KEY = 'sk-3V4NNKm3ZdGGUAzjP4UOHE48hE3y4qAnsiUGHo20y6hyJw9P'
@@ -77,7 +77,7 @@ MAX_MEMORY_NUMBER = 50
 UPLOAD_MEMORY_TO_AI = True
 
 # 是否接收全部群聊消息
-ACCEPT_ALL_GROUP_CHAT_MESSAGES = False
+ACCEPT_ALL_GROUP_CHAT_MESSAGES = True
 
 # 登录配置编辑器设置
 ENABLE_LOGIN_PASSWORD = False

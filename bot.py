@@ -35,6 +35,8 @@ from urllib.parse import urlparse
 # 生成用户昵称列表和prompt映射字典
 user_names = [entry[0] for entry in LISTEN_LIST]
 prompt_mapping = {entry[0]: entry[1] for entry in LISTEN_LIST}
+# 添加群聊标识字典
+is_group_chat = {entry[0]: entry[2] if len(entry) > 2 else False for entry in LISTEN_LIST}
 
 # 获取微信窗口对象
 wx = WeChat()
@@ -515,7 +517,7 @@ def recognize_image_with_moonshot(image_path, is_emoji=False):
         result = response.json()
         recognized_text = result['choices'][0]['message']['content']
         if is_emoji:
-            # 如果recognized_text包含“最后一张表情包是”，只保留后面的文本
+            # 如果recognized_text包含"最后一张表情包是"，只保留后面的文本
             if "最后一张表情包是" in recognized_text:
                 recognized_text = recognized_text.split("最后一张表情包是", 1)[1].strip()
             recognized_text = "发送了表情包：" + recognized_text
@@ -725,7 +727,7 @@ def handle_wxauto_message(msg, who):
                     logger.info(f"成功获取链接内容摘要 (长度 {len(fetched_web_content)})。")
                     # 构建包含链接摘要的新消息内容，用于发送给AI
                     # 注意：这里替换了 processed_content，AI将收到包含原始消息和链接摘要的组合信息
-                    processed_content = f"用户发送了消息：“{original_content}”\n其中包含的链接的主要内容摘要如下（可能不完整）：\n---\n{fetched_web_content}\n---\n"
+                    processed_content = f'用户发送了消息："{original_content}"\n其中包含的链接的主要内容摘要如下（可能不完整）：\n---\n{fetched_web_content}\n---\n'
                 else:
                     logger.warning(f"未能从链接 {url_to_fetch} 提取有效文本内容。将按原始消息处理。")
                     # 如果抓取失败，processed_content 保持不变（可能是原始文本，或图片/表情占位符）
@@ -867,6 +869,12 @@ def send_reply(user_id, sender_name, username, original_merged_message, reply):
     global is_sending_message
     if not reply:
         logger.warning(f"尝试向 {user_id} 发送空回复。")
+        return
+
+    # 检查是否为群聊"PASS"指令
+    is_group = is_group_chat.get(user_id, False)
+    if is_group and reply.strip() == "PASS":
+        logger.info(f"AI决定不回复群聊消息: {original_merged_message}")
         return
 
     # --- 如果正在发送，等待 ---
@@ -1486,8 +1494,8 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
                          return False
                 except (KeyError, ValueError, TypeError) as val_e:
                      logger.error(f"解析AI返回的 'one-off-short' 提醒数据失败。用户: {user_id}, 数据: {reminder_data}, 错误: {val_e}")
-                     error_prompt = f"用户想设置短期提醒（原始请求 '{message_content}'），但我没理解好时间({type(val_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们换种方式说，比如‘5分钟后提醒我...’。"
-                     fallback = "抱歉呀，我好像没太明白你的时间意思，设置短期提醒失败了。能麻烦你换种方式再说一遍吗？比如 ‘5分钟后提醒我...’。"
+                     error_prompt = f"用户想设置短期提醒（原始请求 '{message_content}'），但我没理解好时间({type(val_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们换种方式说，比如'5分钟后提醒我...'"
+                     fallback = "抱歉呀，我好像没太明白你的时间意思，设置短期提醒失败了。能麻烦你换种方式再说一遍吗？比如 '5分钟后提醒我...'"
                      send_error_reply(user_id, error_prompt, fallback, f"One-off-short数据解析失败 ({type(val_e).__name__})")
                      return False
 
@@ -1509,7 +1517,7 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
 
                 log_original_message_to_memory(user_id, message_content) # 记录原始请求
 
-                confirmation_prompt = f"""用户刚才的请求是：“{message_content}”。
+                confirmation_prompt = f"""用户刚才的请求是："{message_content}"。
 根据这个请求，你已经成功将一个【短期一次性】提醒（10分钟内）安排在 {confirmation_time_str} (也就是 {delay_str_approx}) 触发。
 提醒的核心内容是：'{reminder_msg}'。
 请你用自然、友好的语气回复用户，告诉他这个【短期】提醒已经设置好了，确认时间和提醒内容。"""
@@ -1531,8 +1539,8 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
                         return False
                 except (KeyError, ValueError, TypeError) as val_e:
                     logger.error(f"解析AI返回的 'one-off-long' 提醒数据失败。用户: {user_id}, 数据: {reminder_data}, 错误: {val_e}")
-                    error_prompt = f"用户想设置一个较远时间的提醒（原始请求 '{message_content}'），但我没理解好目标时间 ({type(val_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们用明确的日期和时间再说，比如‘明天下午3点’或‘2024-06-15 10:00’。"
-                    fallback = "抱歉呀，我好像没太明白你说的那个未来的时间点，设置提醒失败了。能麻烦你说得更清楚一点吗？比如 ‘明天下午3点’ 或者 ‘6月15号上午10点’ 这样。"
+                    error_prompt = f"用户想设置一个较远时间的提醒（原始请求 '{message_content}'），但我没理解好目标时间 ({type(val_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们用明确的日期和时间再说，比如'明天下午3点'或'2024-06-15 10:00'。"
+                    fallback = "抱歉呀，我好像没太明白你说的那个未来的时间点，设置提醒失败了。能麻烦你说得更清楚一点吗？比如 '明天下午3点' 或者 '6月15号上午10点' 这样。"
                     send_error_reply(user_id, error_prompt, fallback, f"One-off-long数据解析失败 ({type(val_e).__name__})")
                     return False
 
@@ -1556,7 +1564,7 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
                 log_original_message_to_memory(user_id, message_content)
 
                 # 发送确认消息
-                confirmation_prompt = f"""用户刚才的请求是：“{message_content}”。
+                confirmation_prompt = f"""用户刚才的请求是："{message_content}"。
 根据这个请求，你已经成功为他设置了一个【一次性】提醒。
 这个提醒将在【指定时间】 {target_datetime_str} 触发。
 提醒的核心内容是：'{reminder_msg}'。
@@ -1573,8 +1581,8 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
                     datetime.strptime(time_str, '%H:%M') # 验证 HH:MM 格式
                 except (KeyError, ValueError, TypeError) as val_e:
                     logger.error(f"解析AI返回的 'recurring' 提醒数据失败。用户: {user_id}, 数据: {reminder_data}, 错误: {val_e}")
-                    error_prompt = f"用户想设置每日提醒（原始请求 '{message_content}'），但我没理解好时间 ({type(val_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们用明确的‘每天几点几分’格式再说，比如‘每天早上8点’或‘每天22:30’。"
-                    fallback = "抱歉呀，我好像没太明白你说的每日提醒时间，设置失败了。能麻烦你说清楚是‘每天几点几分’吗？比如 ‘每天早上8点’ 或者 ‘每天22:30’ 这样。"
+                    error_prompt = f"用户想设置每日提醒（原始请求 '{message_content}'），但我没理解好时间 ({type(val_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们用明确的'每天几点几分'格式再说，比如'每天早上8点'或'每天22:30'。"
+                    fallback = "抱歉呀，我好像没太明白你说的每日提醒时间，设置失败了。能麻烦你说清楚是'每天几点几分'吗？比如 '每天早上8点' 或者 '每天22:30' 这样。"
                     send_error_reply(user_id, error_prompt, fallback, f"Recurring数据解析失败 ({type(val_e).__name__})")
                     return False
 
@@ -1611,7 +1619,7 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
                 log_original_message_to_memory(user_id, message_content)
 
                 # 向用户发送确认消息
-                confirmation_prompt = f"""用户刚才的请求是：“{message_content}”。
+                confirmation_prompt = f"""用户刚才的请求是："{message_content}"。
 根据这个请求，你已经成功为他设置了一个【每日重复】提醒。
 这个提醒将在【每天】的 {time_str} 触发。
 提醒的核心内容是：'{reminder_msg}'。
@@ -1631,8 +1639,8 @@ D) **非提醒请求**：例如 "今天天气怎么样?", "取消提醒"。
             # 处理 JSON 解析本身或后续访问键值对的错误
             response_cleaned_str = response_cleaned if 'response_cleaned' in locals() else 'N/A'
             logger.error(f"解析AI返回的提醒JSON失败 (分类器 v2)。用户: {user_id}, 原始响应: '{response}', 清理后: '{response_cleaned_str}', 错误: {json_e}")
-            error_prompt = f"用户想设置提醒（原始请求可能是 '{message_content}'），但我好像没完全理解时间或者内容，解析的时候出错了 ({type(json_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们换种方式说，比如‘30分钟后提醒我...’或‘每天下午3点叫我...’。"
-            fallback = "抱歉呀，我好像没太明白你的意思，设置提醒失败了。能麻烦你换种方式再说一遍吗？比如 ‘30分钟后提醒我...’ 或者 ‘每天下午3点叫我...’ 这种。"
+            error_prompt = f"用户想设置提醒（原始请求可能是 '{message_content}'），但我好像没完全理解时间或者内容，解析的时候出错了 ({type(json_e).__name__})。请用你的语气抱歉地告诉用户没听懂，并请他们换种方式说，比如'30分钟后提醒我...'或'每天下午3点叫我...'。"
+            fallback = "抱歉呀，我好像没太明白你的意思，设置提醒失败了。能麻烦你换种方式再说一遍吗？比如 '30分钟后提醒我...' 或者 '每天下午3点叫我...' 这种。"
             send_error_reply(user_id, error_prompt, fallback, f"JSON解析失败 ({type(json_e).__name__})")
             return False
 
@@ -2035,14 +2043,14 @@ def needs_online_search(message: str, user_id: str) -> Optional[str]:
     # 构建用于检测的提示词
     detection_prompt = f"""
 请判断以下用户消息是否明确需要查询当前、实时或非常具体的外部信息（例如：{SEARCH_DETECTION_PROMPT}）。
-用户消息：“{message}”
+用户消息："{message}"
 
 如果需要联网搜索，请回答 "需要联网"，并在下一行提供你认为需要搜索的内容。
 如果不需要联网搜索（例如：常规聊天、询问一般知识、历史信息、角色扮演对话等），请只回答 "不需要联网"。
 请不要添加任何其他解释。
 """
     try:
-        logger.info(f"向主 AI 发送联网检测请求，用户: {user_id}，消息: '{message[:50]}...'")
+        logger.info(f'向主 AI 发送联网检测请求，用户: {user_id}，消息: "{message[:50]}..."')
         # 调用主 AI 进行判断，不存储上下文
         response = get_deepseek_response(detection_prompt, user_id=f"online_detection_{user_id}", store_context=False)
 
@@ -2050,7 +2058,7 @@ def needs_online_search(message: str, user_id: str) -> Optional[str]:
         cleaned_response = response.strip()
         if "</think>" in cleaned_response:
             cleaned_response = cleaned_response.split("</think>", 1)[1].strip()
-        logger.info(f"联网检测 AI 响应: '{cleaned_response}'")
+        logger.info(f'联网检测 AI 响应: "{cleaned_response}"')
 
         if "不需要联网" in cleaned_response:
             logger.info(f"用户 {user_id} 的消息不需要联网。")
@@ -2058,10 +2066,10 @@ def needs_online_search(message: str, user_id: str) -> Optional[str]:
         elif "需要联网" in cleaned_response:
             # 提取需要搜索的内容
             search_content = cleaned_response.split("\n", 1)[1].strip() if "\n" in cleaned_response else ""
-            logger.info(f"检测到用户 {user_id} 的消息需要联网，搜索内容: '{search_content}'")
+            logger.info(f'检测到用户 {user_id} 的消息需要联网，搜索内容: "{search_content}"')
             return search_content
         else:
-            logger.warning(f"无法解析联网检测响应，用户: {user_id}，响应: '{cleaned_response}'")
+            logger.warning(f'无法解析联网检测响应，用户: {user_id}，响应: "{cleaned_response}"')
             return None
 
     except Exception as e:
@@ -2090,7 +2098,7 @@ def get_online_model_response(query: str, user_id: str) -> Optional[str]:
     online_query_prompt = f"请在互联网上查找相关信息，忽略过时信息，并给出简要的回答。\n{ONLINE_FIXED_PROMPT}\n当前时间：{current_time_str}\n\n{query}"
 
     try:
-        logger.info(f"调用在线 API - 用户: {user_id}, 查询: '{query[:100]}...'")
+        logger.info(f'调用在线 API - 用户: {user_id}, 查询: "{query[:100]}..."')
         # 使用 online_client 调用在线模型
         response = online_client.chat.completions.create(
             model=ONLINE_MODEL,

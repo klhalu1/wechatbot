@@ -159,8 +159,8 @@
         /* 用户条目样式 */
         .entry {
             display: grid;
-            grid-template-columns: 2fr 3fr auto;
-            gap: 15px;
+            grid-template-columns: 1.5fr 2.5fr 1.2fr auto;
+            gap: 10px;
             margin-bottom: 10px;
             align-items: center;
         }
@@ -408,6 +408,36 @@
             width: 100%;
         }
     }
+
+        /* 开关样式 */
+        .switch-label {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .switch-label input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .group-label {
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+        
+        .group-label span {
+            margin-right: 5px;
+        }
+        
+        #listen-list .switch-label {
+            margin-bottom: 0;
+        }
     </style>      
       
     <script>
@@ -766,6 +796,7 @@
             // 以下代码保持原有逻辑
             function addEntry() {
                 const container = document.getElementById('listen-list');
+                const entryCount = container.querySelectorAll('.entry').length;
                 const div = document.createElement('div');
                 div.className = 'entry';
                 div.innerHTML = `
@@ -776,6 +807,13 @@
                         <option value="{{ file }}">{{ file }}</option>
                         {% endfor %}
                     </select>
+                    <div class="group-label">
+                        <span>是否群聊:</span>
+                        <label class="switch-label">
+                            <input type="checkbox" name="is_group_${entryCount}">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
                     <button type="button" onclick="removeEntry(this)">删除</button>
                 `;
                 container.appendChild(div);
@@ -1403,6 +1441,13 @@
                             <option value="{{ file }}" {% if item[1] == file %}selected{% endif %}>{{ file }}</option>
                             {% endfor %}
                         </select>
+                        <div class="group-label">
+                            <span>是否群聊:</span>
+                            <label class="switch-label">
+                                <input type="checkbox" name="is_group_{{ loop.index0 }}" {% if item|length > 2 and item[2] %}checked{% endif %}>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
                         <button type="button" onclick="removeEntry(this)">删除</button>
                     </div>
                     {% endfor %}
@@ -1754,7 +1799,7 @@
             <div class="form-group">
                 <label>主动消息内容(发送给ai获取回复):</label>
                 <input type="text" name="AUTO_MESSAGE" value="{{ config.AUTO_MESSAGE }}">
-                <small>如果开启了联网功能，您也可以在这里设置联网请求比如“获取最新的新闻资讯”。</small>
+                <small>如果开启了联网功能，您也可以在这里设置联网请求比如"获取最新的新闻资讯"。</small>
             </div>
             
             <div class="form-group">
@@ -1789,10 +1834,10 @@
                 </div>
             </div>
             <p>
-            开启后，您可以给AI发送指令如“15分钟后提醒我出门”、“下午3点叫我开会”、“每天早上8点跟我道早安”来生成临时一次性定时/重复定时消息。
+            开启后，您可以给AI发送指令如"15分钟后提醒我出门"、"下午3点叫我开会"、"每天早上8点跟我道早安"来生成临时一次性定时/重复定时消息。
             </p>
             <p>
-            如果开启了联网搜索功能，你还可以通过指令如“每天早上10点跟我讲讲今天的新闻”来生成定时联网消息。
+            如果开启了联网搜索功能，你还可以通过指令如"每天早上10点跟我讲讲今天的新闻"来生成定时联网消息。
             </p>
             <p>
             定时消息将储存在目录下的<code>recurring_reminders.json</code> 文件中并在程序运行时调用。
@@ -1904,7 +1949,7 @@
                 GNU 通用公共许可证 第3版 (或更高版本)</a> 的条款重新发布和修改本软件。
             </p>
             <p>
-                本软件按“现状”提供，不提供任何明示或暗示的担保 (包括适销性或特定用途适用性)。<br>
+                本软件按"现状"提供，不提供任何明示或暗示的担保 (包括适销性或特定用途适用性)。<br>
                 如您未收到完整的许可证副本，请访问 <a href="https://www.gnu.org/licenses/gpl-3.0.zh-cn.html" target="_blank">
                 GNU GPL 3.0 中文版</a> 获取。
             </p>
